@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>天气预报</title>
+		<!-- 引入外联样式 -->
+		<link rel="stylesheet" type="text/css" href="css/index_style.css" />
+
+		<!-- echarts js 图表 -->
+		<!-- <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.0.0-rc.1/echarts.min.js"></script> -->
+		<script src="js/echarts.js" type="text/javascript" charset="utf-8"></script>
+		
+		<!-- 改变echarts图表的颜色 -->
+		<script src="js/infographic.js" type="text/javascript" charset="utf-8"></script>
+
+
+		<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+		<!-- <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> -->
+		<!-- vue -->
+		<script src="js/vue.js" type="text/javascript" charset="utf-8"></script>
+		
+		<!-- axios的引用 -->
+		<!-- <script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
+		<script src="js/axios.js" type="text/javascript" charset="utf-8"></script>
+		
+		<!-- 城市的遍历 -->
+		<script src="js/province.js" type="text/javascript" charset="utf-8"></script>
+		
+		<!-- 鼠标移动的特效 -->
+		<script src="js/canvasStar.js"></script>
+	</head>
+	<body>
+		<canvas id="canvas"></canvas>
+		<!-- 页面背景 -->
+		<div id="back">
+
+		</div>
+
+
+		<!-- 1:页面头部 -->
+		<div id="head">
+			<div id="head_nav">
+				<img src="img/logo.png" height="30">
+				<span>搜索更多城市</span>
+			</div>
+		</div>
+
+		<!-- 2：当天的天气信息 -->
+		<div id="todayinfo">
+			<div id="today_title">
+				<span>天气</span> >
+				<!-- 中国 -->
+				<span>{{ todayinfo.country }}</span> >
+				<!-- 省份 -->
+				<span>{{ province }}</span> >
+				<!-- 城市 -->
+				<span>{{ todayinfo.city }}</span>
+			</div>
+
+			<div id="today_location">
+				<img src="img/i_localhost.png">
+				{{ todayinfo.city }} {{ province }} {{ todayinfo.country }}
+			</div>
+
+			<div id="today_level">
+				<!-- 树叶 -->
+				<div class="shuye">
+					<img src="img/2.png" width="16px" />
+				</div>
+				<!-- 级别文本 -->
+				<!-- 68 良 -->
+				{{ todayinfo.air }} {{ todayinfo.air_level }}
+			</div>
+
+			<div id="today_tem">
+				<!-- 温度 -->
+				<span class="current_tem">{{ todayinfo.tem +"°"}}</span>
+				<!-- 天气情况 -->
+				<span class="current_wea">{{ todayinfo.wea }}</span>
+				<!-- 年份  时间 -->
+				<span class="updae_time">
+					{{ todayinfo.date }} {{ todayinfo.update_time }}</span>
+			</div>
+
+			<div id="today_other">
+				<!-- 湿度 -->
+				<img class="water" src="img/i_water.png" /> 湿度 {{ todayinfo.humidity }}
+				<!-- 风向  等级-->
+				<img class="wind" src="img/i_wind.png" /> {{ todayinfo.win }} {{ todayinfo.win_speed }}
+			</div>
+
+			<div id="today_tip">
+				<span>今日天气提示</span>
+				{{ todayinfo.air_tips }}
+				<!-- {{ todayinfo.┗ waichu }} -->
+
+				<!-- ,{{ todayinfo.┗ kaichuang }},{{ todayinfo.┗ jinghuaqi }},{{ todayinfo.┗ kouzhao }} -->
+				<!-- 空气好，可以外出活动，除极少数对污染物特别敏感的人群以外，对公众没有危害！ -->
+			</div>
+		</div>
+
+
+		<!-- 3：未来七日信息 -->
+		<div id="seven_dayinfo">
+			<div class="title">
+				七天预报
+			</div>
+
+			<div class="content">
+				<ul>
+					<li v-for="temp in sevendayinfo">
+						<span>{{temp.day}} </span> <!-- 13日 (明天) -->
+						<span>{{temp.wea}} </span> <!-- 多云 -->
+						<span>{{temp.tem2 + "/"}}{{temp.tem1}} </span> <!-- 3°C/17°C -->
+						<span>{{temp.win[0]}}<!--+ "~" {{temp.win[1]}} --></span> <!-- 无持续风向 -->
+						<span>{{temp.win_speed}} </span> <!-- 3级 -->
+						<span>{{temp.air}} {{temp.air_level}} </span> <!-- 62良 -->
+					</li>
+				</ul>
+			</div>
+
+
+		</div>
+
+
+		<!-- 4：24小时的温度折线图 -->
+		<div id="hour_info">
+			<div class="title">
+				24小时天气预报
+			</div>
+			<div id="main">
+				<script type="text/javascript">
+					var labs = [];
+					var tems = [];
+					/* 1.远程读取数据 */
+
+					axios.get('https://tianqiapi.com/api?version=v1&appid=65716456&appsecret=4ZVZxjX8')
+						.then(function(response) {
+							console.log("========");
+							console.log(response.data.data[0].hours);
+							var weainfo = response.data.data[0].hours;
+
+							for (var i = 0; i<weainfo.length; i++) {
+								// console.log(weainfo[i].day);
+								labs.push(weainfo[i].day);
+
+								console.log(weainfo[i].tem);
+								var temptem = weainfo[i].tem.replace("℃","");
+								temptem = parseInt(temptem);
+								tems.push(temptem);
+							}
+							// 基于准备好的dom，初始化echarts实例
+							var myChart = echarts.init(document.getElementById('main'), "infographic");
+
+							option = {
+								xAxis: {
+									type: 'category',
+									data: labs
+								},
+								yAxis: {
+									type: 'value'
+								},
+								series: [{
+									data: tems,
+									type: 'line'
+								}]
+							};
+
+							// 使用刚指定的配置项和数据显示图表。
+							myChart.setOption(option);
+
+						})
+						.catch(function(error) {
+							console.log(error);
+						});
+
+					/* 2.处理数据 */
+					/* 3.将处理结果赋值给两个数据变量 */
+				</script>
+			</div>
+		</div>
+
+		<!-- 自己的js一般在最后 -->
+		<script src="js/index_js.js" type="text/javascript" charset="utf-8"></script>
+	</body>
+</html>
